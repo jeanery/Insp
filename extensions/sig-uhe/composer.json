@@ -1,0 +1,22 @@
+{
+  "name": "sig-uhe/extension",
+  "description": "SIG-UHE: cadastros e solicita\u00e7\u00f5es para Fleetbase",
+  "type": "library",
+  "require": {
+    "php": "^8.2",
+    "fleetbase/core-api": "1.6.72",
+    "fleetbase/fleetops-api": "0.6.74"
+  },
+  "autoload": {
+    "psr-4": {
+      "SigUhe\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "SigUhe\\ServiceProvider"
+      ]
+    }
+  }
+}

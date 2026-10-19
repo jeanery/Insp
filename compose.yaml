@@ -1,0 +1,65 @@
+name: sig-uhe
+services:
+  database:
+    image: mysql:8.0-oracle@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b
+    command: [mysqld, --skip-log-bin]
+    environment:
+      MYSQL_DATABASE: fleetbase
+      MYSQL_ROOT_PASSWORD: ${SIG_UHE_DB_PASSWORD:?Execute scripts/setup.py}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: [CMD-SHELL, 'MYSQL_PWD="$$MYSQL_ROOT_PASSWORD" mysqladmin ping -h localhost --silent']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  cache:
+    image: redis:7.4-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
+    command: [redis-server, --appendonly, 'yes']
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  api:
+    image: sig-uhe-php:dev
+    user: '1000:1000'
+    working_dir: /app
+    command: [php, -S, '0.0.0.0:8000', scripts/router.php]
+    env_file: .env
+    environment:
+      FLEETBASE_API_PATH: /app/.runtime/fleetbase/api
+    ports:
+      - '127.0.0.1:8000:8000'
+    volumes:
+      - .:/app
+    depends_on:
+      cache:
+        condition: service_healthy
+      database:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, php, scripts/health.php]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  worker:
+    image: sig-uhe-php:dev
+    user: '1000:1000'
+    working_dir: /app
+    command: [php, scripts/artisan.php, 'queue:work', '--sleep=1', '--tries=1', '--timeout=60']
+    env_file: .env
+    environment:
+      FLEETBASE_API_PATH: /app/.runtime/fleetbase/api
+    volumes:
+      - .:/app
+    depends_on:
+      cache:
+        condition: service_healthy
+      database:
+        condition: service_healthy
+volumes:
+  mysql-data:
+  redis-data:
