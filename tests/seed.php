@@ -14,16 +14,24 @@ $tokens=[];
 foreach (['alpha','beta'] as $org) {
     $company=Company::create(['name'=>'SIG-UHE fictícia '.$org.' '.$run,'country'=>'BR','timezone'=>'America/Sao_Paulo']);
     $admin=User::create(['name'=>'Administrador fictício','email'=>$org.'-'.$run.'@example.invalid','company_uuid'=>$company->uuid]);
-    $admin->forceFill(['type'=>'admin','password'=>\Illuminate\Support\Facades\Hash::make(Str::random(40))])->save();
+    $password=Str::random(40);
+    $admin->forceFill(['type'=>'admin','password'=>$password])->save();
     \Fleetbase\Models\CompanyUser::create(['company_uuid'=>$company->uuid,'user_uuid'=>$admin->uuid,'status'=>'active']);
+    $admin->assignSingleRole(\Fleetbase\Models\Role::firstOrCreate(['name'=>'SIG-UHE Test Administrator','guard_name'=>'sanctum']));
     $company->owner_uuid=$admin->uuid; $company->save();
     FleetOps::createTransportConfig($company);
     $tokens[$org]=$admin->createToken('sig-uhe-functional-test')->plainTextToken;
     if ($org==='alpha') {
+        $tokens['login_email']=$admin->email;
+        $tokens['login_password']=$password;
         $reader=User::create(['name'=>'Consulta fictícia','email'=>'reader-'.$run.'@example.invalid','company_uuid'=>$company->uuid]);
-        $reader->forceFill(['type'=>'user'])->save();
+        $readerPassword=Str::random(40);
+        $reader->forceFill(['type'=>'user','password'=>$readerPassword,'email_verified_at'=>now()])->save();
+        $tokens['reader_email']=$reader->email;
+        $tokens['reader_password']=$readerPassword;
         \Fleetbase\Models\CompanyUser::create(['company_uuid'=>$company->uuid,'user_uuid'=>$reader->uuid,'status'=>'active']);
         $permission=Permission::firstOrCreate(['name'=>'sig-uhe.read','guard_name'=>'sanctum']);
+        $reader->assignSingleRole(\Fleetbase\Models\Role::firstOrCreate(['name'=>'SIG-UHE Test Read Only','guard_name'=>'sanctum']));
         $reader->givePermissionTo($permission);
         $tokens['reader']=$reader->createToken('sig-uhe-functional-test')->plainTextToken;
         for ($i=1;$i<=3;$i++) Fleet::create(['company_uuid'=>$company->uuid,'name'=>'Equipe sintética '.$i]);

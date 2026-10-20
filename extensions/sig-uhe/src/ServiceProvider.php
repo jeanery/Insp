@@ -10,6 +10,7 @@ final class ServiceProvider extends BaseProvider
     {
         $this->loadMigrationsFrom(__DIR__.'/../migrations');
         Route::prefix('sig-uhe/v1')->middleware(['fleetbase.protected', Access::class, 'throttle:60,1'])->group(function () {
+            Route::get('overview', [Controller::class, 'overview']);
             Route::get('teams', [Controller::class, 'teams']);
             Route::post('teams', [Controller::class, 'createTeam']);
             Route::patch('requests/{id}', [Controller::class, 'updateRequest']);

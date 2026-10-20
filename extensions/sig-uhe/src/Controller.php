@@ -59,7 +59,35 @@ final class Controller extends \Illuminate\Routing\Controller
     }
     public function plants() { return $this->query('uhe_plants')->orderBy('code')->paginate(50); }
     public function reservoirs() { return $this->query('uhe_reservoirs')->orderBy('name')->paginate(50); }
-    public function requests() { return $this->query('uhe_requests')->orderBy('protocol')->paginate(50); }
+    public function requests(Request $r)
+    {
+        $v=$r->validate(['q'=>'nullable|string|max:100','status'=>'nullable|in:open,triage,awaiting_schedule,scheduled,in_progress,completed,cancelled','page'=>'nullable|integer|min:1']);
+        $query=$this->query('uhe_requests');
+        if (!empty($v['status'])) $query->where('status',$v['status']);
+        if (isset($v['q']) && trim($v['q'])!=='') {
+            $term='%'.str_replace(['\\','%','_'],['\\\\','\\%','\\_'],trim($v['q'])).'%';
+            $query->where(function ($q) use ($term) { $q->where('protocol','like',$term)->orWhere('description','like',$term); });
+        }
+        return $query->orderByDesc('created_at')->orderBy('id')->paginate(50)->withQueryString();
+    }
+    public function overview(Request $r)
+    {
+        $user=$r->user();
+        $canWrite=$user->isAdmin();
+        if (!$canWrite) {
+            try { $canWrite=$user->hasPermissionTo('sig-uhe.write','sanctum'); }
+            catch (\Spatie\Permission\Exceptions\PermissionDoesNotExist $e) { $canWrite=false; }
+        }
+        return [
+            'plants'=>$this->query('uhe_plants')->count(),
+            'reservoirs'=>$this->query('uhe_reservoirs')->count(),
+            'requests'=>$this->query('uhe_requests')->count(),
+            'pending_requests'=>$this->query('uhe_requests')->whereNotIn('status',['completed','cancelled'])->count(),
+            'orders'=>$this->query('uhe_request_orders')->count(),
+            'teams'=>Fleet::where('company_uuid',session('company'))->count(),
+            'can_write'=>$canWrite,
+        ];
+    }
     public function audit() { return $this->query('uhe_audit_events')->orderByDesc('created_at')->paginate(50); }
     public function createPlant(Request $r)
     {

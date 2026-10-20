@@ -84,4 +84,18 @@ class Workflow(unittest.TestCase):
         status,obj=call('GET','audit');self.assertEqual(status,200,obj)
         self.assertGreater(obj['total'],100)
         self.assertTrue(all(v['company_uuid']==TOKENS['company_uuid'] for v in obj['data']))
+    def test_11_overview_permissions_and_tenant_counts(self):
+        status,overview=call('GET','overview');self.assertEqual(status,200,overview)
+        self.assertTrue(overview['can_write']);self.assertEqual(overview['orders'],100)
+        self.assertFalse(call('GET','overview',actor='reader')[1]['can_write'])
+        self.assertEqual(call('GET','overview',actor='beta')[1]['plants'],0)
+    def test_12_request_search_and_status_filter(self):
+        protocol='FILTRO-'+self.run_id
+        status,item=call('POST','requests',self.request(protocol=protocol));self.assertEqual(status,201,item)
+        status,result=call('GET','requests?q='+protocol);self.assertEqual(status,200,result)
+        self.assertEqual(result['total'],1);self.assertEqual(result['data'][0]['id'],item['id'])
+        self.assertEqual(call('GET','requests?q='+protocol,actor='beta')[1]['total'],0)
+        self.assertEqual(call('GET','requests?q='+protocol+'&status=cancelled')[1]['total'],0)
+        self.assertEqual(call('GET','requests?status=invalid')[0],422)
+
 if __name__=='__main__': unittest.main(verbosity=2)
