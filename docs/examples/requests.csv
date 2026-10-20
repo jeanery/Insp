@@ -1,0 +1,2 @@
+reservoir_id,protocol,description,category,priority,latitude,longitude,access_latitude,access_longitude,service_seconds
+SUBSTITUA_PELO_ID_DO_RESERVATORIO,EXEMPLO-001,Vistoria fictícia de rampa,rampa,normal,-23,-50,,,900

@@ -1,0 +1,7 @@
+{
+  "name": "SIG-UHE",
+  "version": "0.1.0",
+  "description": "Inspe\u00e7\u00f5es, usinas e reservat\u00f3rios",
+  "engine": "package.json",
+  "api": "composer.json"
+}

@@ -1,0 +1,2 @@
+# Browser tests use the system Chromium; no browser download is required here.
+playwright==1.62.0

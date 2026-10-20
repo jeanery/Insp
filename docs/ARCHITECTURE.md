@@ -34,7 +34,7 @@ O Fleet-Ops já registra `OrchestrationEngineRegistry`, `VroomOrchestrationEngin
 
 ## Escopo da validação
 
-O alvo atual é a API operacional em desenvolvimento. Console Ember, mapas, PostGIS, SocketCluster, scheduler, VROOM/OSRM e app mobile não estão homologados por esse alvo. A arquitetura final continua modular sobre Fleetbase; não foi criada uma plataforma operacional paralela.
+O alvo atual inclui a API e o Ember Engine SIG-UHE integrado à console nativa em desenvolvimento (ver WEB_INTERFACE.md). Mapas, PostGIS, SocketCluster, scheduler, VROOM/OSRM e app mobile não estão homologados por esse alvo. A arquitetura final continua modular sobre Fleetbase; não foi criada uma plataforma operacional paralela.
 
 ## Ajustes comprovados de runtime
 

@@ -45,6 +45,23 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+  web:
+    image: sig-uhe-php:dev
+    user: '1000:1000'
+    working_dir: /app
+    command: [php, -S, '0.0.0.0:4200', scripts/web-router.php]
+    ports:
+      - '127.0.0.1:4200:4200'
+    volumes:
+      - .:/app:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, php, scripts/web-health.php]
+      interval: 15s
+      timeout: 10s
+      retries: 5
   worker:
     image: sig-uhe-php:dev
     user: '1000:1000'
