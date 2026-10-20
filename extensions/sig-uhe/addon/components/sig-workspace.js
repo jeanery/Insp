@@ -12,6 +12,8 @@ const NEXT = {
     awaiting_schedule: ['scheduled', 'cancelled'], scheduled: ['in_progress', 'awaiting_schedule', 'cancelled'],
     in_progress: ['completed', 'cancelled'], completed: [], cancelled: [],
 };
+const SKILLS = { land: 'Inspeção fundiária', environmental: 'Inspeção ambiental', engineering: 'Engenharia', nautical: 'Inspeção náutica', tagging: 'Etiquetagem', drone: 'Inspeção com drone' };
+const DAYS = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado', 'Domingo'];
 const PRIORITY = { low: 'Baixa', normal: 'Normal', high: 'Alta', urgent: 'Urgente' };
 
 export default class SigWorkspaceComponent extends Component {
@@ -37,6 +39,7 @@ export default class SigWorkspaceComponent extends Component {
     @tracked form = null;
     @tracked formData = {};
     @tracked selected = null;
+    @tracked profileTeam = null;
     @tracked orders = [];
     // Retain this key on errors so retries cannot create duplicate orders.
     issuanceKey = null;
@@ -64,12 +67,17 @@ export default class SigWorkspaceComponent extends Component {
     get isPlantForm() { return this.form === 'plant'; }
     get isReservoirForm() { return this.form === 'reservoir'; }
     get isRequestForm() { return this.form === 'request'; }
+    get isProfileForm() { return this.form === 'profile'; }
+    get profileReadOnly() { return this.isProfileForm && !this.canWrite; }
+    get skillOptions() { return Object.entries(SKILLS).map(([value, label]) => ({ value, label, checked: (this.formData.skills || []).includes(value) })); }
+    get weekdays() { return DAYS.map((label, i) => ({ value: i + 1, label })); }
+    get teamRows() { return this.teams.map(team => ({ ...team, profileLabel: team.operational_profile ? (team.operational_profile.availability === 'available' ? 'Disponível' : 'Indisponível') : 'Não configurado', skillsLabel: (team.operational_profile?.skills || []).map(skill => SKILLS[skill]).join(', ') })); }
     get isTeamForm() { return this.form === 'team'; }
     get isOrderForm() { return this.form === 'order'; }
     get isStatusForm() { return this.form === 'status'; }
     get formTitle() {
         return { plant: 'Cadastrar UHE', reservoir: 'Cadastrar reservatório', request: 'Nova solicitação',
-            team: 'Cadastrar equipe', order: 'Emitir ordem de serviço', status: 'Atualizar situação' }[this.form];
+            profile: 'Perfil operacional da equipe', team: 'Cadastrar equipe', order: 'Emitir ordem de serviço', status: 'Atualizar situação' }[this.form];
     }
     get statusOptions() { return Object.entries(STATUS).map(([value, label]) => ({ value, label })); }
     get nextStatuses() { return (NEXT[this.selected?.status] || []).map(value => ({ value, label: STATUS[value] })); }
@@ -90,7 +98,7 @@ export default class SigWorkspaceComponent extends Component {
     get auditRows() {
         const names = { 'create.uhe_plants': 'UHE cadastrada', 'create.uhe_reservoirs': 'Reservatório cadastrado',
             'create.uhe_requests': 'Solicitação cadastrada', 'create.uhe_request_orders': 'Vínculo de OS criado',
-            'order.issued': 'Ordem de serviço emitida', 'team.created': 'Equipe cadastrada', 'request.status_changed': 'Situação alterada' };
+            'order.issued': 'Ordem de serviço emitida', 'team.created': 'Equipe cadastrada', 'team.profile_updated': 'Perfil operacional atualizado', 'request.status_changed': 'Situação alterada' };
         return this.audit.map(item => ({ ...item, label: names[item.action] || item.action }));
     }
     get selectedStatus() { return STATUS[this.selected?.status]; }
@@ -157,6 +165,35 @@ export default class SigWorkspaceComponent extends Component {
         try { await this.loadSection(); } catch (error) { this.auditPage -= delta; this.error = this.message(error); }
         finally { this.busy = false; }
     }
+    @action async openProfile(team) {
+        if (this.busy || this.saving) return;
+        this.busy = true; this.error = ''; this.form = null;
+        try {
+            const { profile } = await this.sigApi.get(`teams/${team.uuid}/profile`);
+            this.profileTeam = team;
+            this.formData = profile ? { ...profile, reason: '' } : {
+                version: 0, availability: 'unavailable', timezone: 'America/Sao_Paulo',
+                skills: [], weekly_windows: [], daily_capacity_minutes: 480, base_latitude: '', base_longitude: '', reason: '',
+            };
+            this.form = 'profile';
+        } catch (error) { this.error = this.message(error); }
+        finally { this.busy = false; }
+    }
+    @action toggleSkill(skill, event) {
+        const skills = new Set(this.formData.skills);
+        if (event.target.checked) skills.add(skill); else skills.delete(skill);
+        this.formData = { ...this.formData, skills: [...skills] };
+    }
+    @action addWindow() {
+        this.formData = { ...this.formData, weekly_windows: [...this.formData.weekly_windows, { day: 1, start: '08:00', end: '17:00' }] };
+    }
+    @action removeWindow(index) {
+        this.formData = { ...this.formData, weekly_windows: this.formData.weekly_windows.filter((_, i) => i !== index) };
+    }
+    @action updateWindow(index, field, event) {
+        const value = field === 'day' ? Number(event.target.value) : event.target.value;
+        this.formData = { ...this.formData, weekly_windows: this.formData.weekly_windows.map((window, i) => i === index ? { ...window, [field]: value } : window) };
+    }
     @action openForm(form) {
         this.form = form; this.error = ''; this.notice = '';
         this.formData = { state: 'PR', priority: 'normal', service_seconds: 900 };
@@ -188,12 +225,17 @@ export default class SigWorkspaceComponent extends Component {
                     else data[field] = Number(data[field]);
                 }
             }
-            if (type === 'status') await this.sigApi.patch(`requests/${this.selected.id}`, data);
+            if (type === 'profile') {
+                const payload = Object.fromEntries(['version', 'availability', 'timezone', 'skills', 'weekly_windows', 'reason'].map(key => [key, data[key]]));
+                for (const field of ['base_latitude', 'base_longitude', 'daily_capacity_minutes']) payload[field] = Number(data[field]);
+                await this.sigApi.patch(`teams/${this.profileTeam.uuid}/profile`, payload);
+            }
+            else if (type === 'status') await this.sigApi.patch(`requests/${this.selected.id}`, data);
             else if (type === 'order') await this.sigApi.post(`requests/${this.selected.id}/orders`, { ...data, idempotency_key: this.issuanceKey });
             else await this.sigApi.post({ plant: 'plants', reservoir: 'reservoirs', request: 'requests', team: 'teams' }[type], data);
             this.form = null; this.selected = null; this.notice = type === 'order' ? 'Ordem emitida. A equipe poderá ser programada pelo planejamento operacional.' : 'Registro salvo com sucesso.';
             this.page = 1;
-            await this.refresh({ catalogs: ['plant', 'reservoir', 'team'].includes(type) });
+            await this.refresh({ catalogs: ['plant', 'reservoir', 'team', 'profile'].includes(type) });
         } catch (error) { this.error = this.message(error); }
         finally { this.saving = false; }
     }

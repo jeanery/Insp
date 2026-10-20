@@ -16,3 +16,8 @@
 .next-view-container:has(.sig-workspace) > .next-view-section { margin-left:0; left:0; width:100%; min-width:0; }
 .sig-workspace { width:100%; min-width:0; box-sizing:border-box; overflow-wrap:anywhere; }
 .next-view-container:has(.sig-workspace) > .next-view-section { overflow-y:auto; overflow-x:hidden; }
+.sig-profile-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; border:0; min-width:0; }
+.sig-check { display:flex; gap:8px; align-items:center; }
+.sig-window-row { display:flex; align-items:flex-end; flex-wrap:wrap; gap:12px; margin:16px 0; }
+.sig-window-row .sig-field { flex:1; min-width:100px; }
+@media(max-width:540px){ .sig-profile-fields { grid-template-columns:1fr; } }

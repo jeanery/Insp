@@ -6,7 +6,7 @@ A interface é um Ember Engine montado na console Fleetbase, em `/sig-uhe`. Usa 
 
 - Visão geral com contagens agregadas de toda a organização, sem inferir totais a partir da primeira página.
 - Cadastro e consulta de UHEs e reservatórios.
-- Cadastro de equipes pelo modelo Fleet do Fleet-Ops.
+- Cadastro de equipes pelo modelo Fleet do Fleet-Ops, com [perfil operacional](TEAM_OPERATIONS.md) para habilidades, base, disponibilidade e jornada semanal.
 - Solicitações com busca por protocolo/descrição, filtro de situação e paginação no servidor.
 - Cadastro de solicitação com coordenadas da ocorrência e acesso opcional, separados.
 - Detalhes, alteração justificada de situação e consulta das OS vinculadas.
@@ -36,7 +36,7 @@ O serviço Compose `web` serve a compilação e encaminha as chamadas para a API
 bash scripts/test_web.sh
 ```
 
-Usa Chromium em `/usr/bin/chromium` (ou `CHROMIUM_PATH`) e Playwright. Quando o pacote Python não estiver presente, instala a versão fixada em um ambiente virtual ignorado pelo Git. O seed gera senhas aleatórias para os perfis sintéticos; elas ficam somente em `.runtime/test-auth.json`, modo 0600, e nunca são impressas. O navegador autentica pelo formulário real do Fleetbase. Não há credencial padrão pública.
+Usa Chromium em `/usr/bin/chromium` (ou `CHROMIUM_PATH`) e Playwright. Quando o pacote Python não estiver presente, instala a versão fixada em um ambiente virtual ignorado pelo Git. O seed gera senhas aleatórias para os perfis sintéticos; elas ficam somente em `.runtime/test-auth.json`, modo 0600, e nunca são impressas. A suíte espaça as chamadas para respeitar o limite real de 60 requisições/minuto da extensão; esse limite não é desativado nos testes. O navegador autentica pelo formulário real do Fleetbase. Não há credencial padrão pública.
 
 Não utilize esse seed com dados de produção. A conta sintética serve para teste e demonstração; usuários corporativos devem ser provisionados pelo fluxo de identidade nativo e por sua política de acesso.
 

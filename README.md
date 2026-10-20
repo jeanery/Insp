@@ -18,7 +18,7 @@ docker compose up -d --wait database cache api worker web
 docker compose exec -T api php scripts/artisan.php migrate:status --no-ansi
 ```
 
-O servidor PHP é exclusivo para desenvolvimento e escuta somente em loopback no host. A console Ember contém o módulo SIG-UHE com visão geral, UHEs, reservatórios, equipes, solicitações e histórico. Consulte [a documentação da interface](docs/WEB_INTERFACE.md). Não há usuário público padrão; os testes abaixo criam identidades sintéticas com tokens e senhas privados para validar os fluxos. Em instalações convencionais, usar o onboarding e autenticação nativos do Fleetbase.
+O servidor PHP é exclusivo para desenvolvimento e escuta somente em loopback no host. A console Ember contém o módulo SIG-UHE com visão geral, UHEs, reservatórios, equipes, solicitações e histórico. Equipes têm [perfil operacional](docs/TEAM_OPERATIONS.md) com habilidades, base, disponibilidade e jornada semanal. Consulte [a documentação da interface](docs/WEB_INTERFACE.md). Não há usuário público padrão; os testes abaixo criam identidades sintéticas com tokens e senhas privados para validar os fluxos. Em instalações convencionais, usar o onboarding e autenticação nativos do Fleetbase.
 
 ## Testes funcionais
 

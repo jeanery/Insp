@@ -8,15 +8,16 @@ Incremento da API e da interface Ember de desenvolvimento validado com Fleetbase
 |---|---|
 | Dependências do composer.lock upstream | 274 pacotes instalados, incluindo desenvolvimento; TLS e checksums do transporte preservados |
 | Migrations nativas e SIG-UHE | Aplicadas; nova instalação repetida resultou em Nothing to migrate |
-| `tests/functional.py` | 12 testes passaram, sem skips, última execução em 21,211 s |
+| `tests/functional.py` | 13 testes passaram, sem skips, última execução em 32,108 s |
 | Cadastro/importação | 100 solicitações fictícias em CSV; lote inválido revertido; protocolo duplicado rejeitado |
 | Ordens | 100 OS nativas emitidas em lote; reenvio idempotente; conteúdo divergente rejeitado |
 | Integração nativa | OS consultada com sucesso em `/v1/orders/{public_id}` |
 | Isolamento/autorização | Outra organização não lê/vincula registros; perfil consulta lê e recebe 403 ao escrever; anônimo recebe 401 |
 | Acesso geográfico | Coordenadas inválidas e acesso incompleto rejeitados; emissão sem acesso bloqueada |
+| Perfil operacional de equipe | Base, fuso, habilidades, jornadas e capacidade persistidos; sobreposição e valores inválidos rejeitados; versão antiga recebe 409; motivo e antes/depois auditados; isolamento e perfil consulta conferidos |
 | Equipes/estados/auditoria | Fleets nativas criadas/consultadas; transições inválidas bloqueadas; motivo registrado; auditoria segregada |
 | `tests/storage.php` | 100 ordens, payloads, estados independentes e coordenadas de acesso verificadas no MySQL |
-| `tests/migration.php` | up/down em schema descartável com definições reais de companies/orders; banco de desenvolvimento preservado |
+| `tests/migration.php` | up/down das duas migrations em schema descartável com definições reais de companies/orders/fleets; banco de desenvolvimento preservado |
 | `tests/queue.php` | Job enviado ao Redis e executado pelo worker Laravel; zero jobs falhos no banco de desenvolvimento |
 | Repetibilidade | `python scripts/setup.py` executado após instalação; dependências existentes preservadas; serviços reiniciados |
 | Código upstream | `git status --short` vazio no checkout de runtime; composer.json e composer.lock inalterados |
@@ -24,9 +25,9 @@ Incremento da API e da interface Ember de desenvolvimento validado com Fleetbase
 ## Interface e gateway
 
 - Console Fleetbase 0.7.71 com Ember Engine SIG-UHE compilada usando pnpm 11.0.9 e lockfile upstream preservado.
-- `tests/browser.py`: oito grupos passaram no Chromium real, sem grupos omitidos: autenticação nativa; cadastros; bloqueio de OS sem acesso e situação justificada; OS idempotente após perda de resposta; CSV inválido/corrigido; paginação 50 + 1; histórico e layout móvel; perfil de consulta. Sem erros de execução JavaScript na sessão administrativa.
+- `tests/browser.py`: nove grupos passaram no Chromium real, sem grupos omitidos: autenticação nativa; cadastros; bloqueio de OS sem acesso e situação justificada; OS idempotente após perda de resposta; CSV inválido/corrigido; paginação 50 + 1; histórico e layout móvel; perfil de consulta; perfil operacional com habilidades/jornada, validação de capacidade, reabertura e consulta desabilitada para escrita. Sem erros de execução JavaScript na sessão administrativa.
 - `tests/web_gateway.py`: quatro testes passaram, incluindo arquivos privados inacessíveis, autenticação preservada, saúde/SPA e arquivos estáticos.
-- Capturas reais com dados sintéticos: [painel](screenshots/sig-uhe-dashboard.png), [solicitações](screenshots/sig-uhe-solicitacoes.png), [celular](screenshots/sig-uhe-mobile.png).
+- Capturas reais com dados sintéticos: [painel](screenshots/sig-uhe-dashboard.png), [solicitações](screenshots/sig-uhe-solicitacoes.png), [celular](screenshots/sig-uhe-mobile.png), [perfil da equipe](screenshots/sig-uhe-equipe.png) e [equipe no celular](screenshots/sig-uhe-equipe-mobile.png).
 - As credenciais de demonstração são geradas aleatoriamente pelo seed e permanecem privadas. O onboarding corporativo e a matriz completa de permissões nativas não foram homologados.
 
 ## Falhas investigadas e resolvidas
@@ -42,6 +43,7 @@ Incremento da API e da interface Ember de desenvolvimento validado com Fleetbase
 9. Engine isolado sem resolver componentes nativos: dependências Ember Core/UI declaradas, carregamento lazy e ember-engines como peer dependency.
 10. Conta de teste sem papel nativo e senha com hash duplo: fixtures passaram a usar papel Sanctum e o mutator de senha nativo, permitindo login real.
 11. Barra lateral vazia cobria o módulo no celular: layout da própria extensão ajustado; verificação passou a medir a área útil, além do overflow da página.
+12. A suíte ampliada excedeu o limite real de 60 requisições/minuto. As chamadas do navegador passaram a respeitar esse limite e a busca passou a exigir HTTP 200 antes de usar os resultados; a proteção do servidor foi mantida.
 
 As primeiras tentativas falharam antes da execução dos cenários; nenhum resultado com zero testes foi considerado aprovação.
 

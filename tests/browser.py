@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Real Chromium/Fleetbase E2E. Seed test identities first; no production data."""
 from pathlib import Path
-import csv,io,json,os,uuid,urllib.request
+import csv,io,json,os,time,uuid,urllib.request
 from playwright.sync_api import sync_playwright, expect
 ROOT=Path(__file__).resolve().parents[1]
 AUTH=json.loads((ROOT/'.runtime/test-auth.json').read_text())
@@ -35,7 +35,9 @@ def save(page):
 
 def search(page,text):
     page.get_by_label('Pesquisar',exact=True).fill(text)
-    page.get_by_role('button',name='Filtrar',exact=True).click()
+    with page.expect_response(lambda res: '/sig-uhe/v1/requests?' in res.url and 'q=' in res.url) as pending:
+        page.get_by_role('button',name='Filtrar',exact=True).click()
+    assert pending.value.status==200, f'Search failed: HTTP {pending.value.status}'
     expect(page.locator('.sig-loading')).to_have_count(0,timeout=30000)
 
 def request_form(page,protocol,access):
@@ -54,12 +56,56 @@ def request_form(page,protocol,access):
 with sync_playwright() as p:
     browser=p.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH','/usr/bin/chromium'),args=['--no-sandbox'])
     context=browser.new_context(viewport={'width':1440,'height':1080},locale='pt-BR',color_scheme='dark')
+    # Respect the real 60/min route limit; the complete suite intentionally makes many requests.
+    last_request=[0.0]
+    def pace_requests(route):
+        delay=1.4-(time.monotonic()-last_request[0])
+        if delay>0: time.sleep(delay)
+        last_request[0]=time.monotonic()
+        route.fallback()
+    context.route('**/sig-uhe/v1/**',pace_requests)
     page=context.new_page()
     errors=[]
     page.on('pageerror',lambda error:errors.append(str(error)))
     try:
         sign_in(page)
         print('PASS: native Fleetbase login and SIG-UHE engine mounted',flush=True)
+        tab(page,'Equipes')
+        team_name='Equipe ambiental '+RUN
+        page.get_by_role('button',name='Cadastrar equipe',exact=True).click()
+        page.get_by_label('Nome da equipe',exact=True).fill(team_name)
+        save(page)
+        team_row=page.locator('.sig-table tbody tr').filter(has_text=team_name)
+        team_row.get_by_role('button',name='Perfil operacional',exact=True).click()
+        expect(page.locator('.sig-form-card')).to_be_visible()
+        page.get_by_label('Disponibilidade operacional',exact=True).select_option('available')
+        page.get_by_label('Latitude da base operacional',exact=True).fill('-23.02')
+        page.get_by_label('Longitude da base operacional',exact=True).fill('-50.02')
+        page.get_by_label('Inspeção ambiental',exact=True).check()
+        page.get_by_label('Inspeção com drone',exact=True).check()
+        page.get_by_role('button',name='Adicionar intervalo',exact=True).click()
+        page.get_by_label('Capacidade diária para serviços (minutos)',exact=True).fill('600')
+        page.get_by_label('Motivo da alteração operacional',exact=True).fill('Jornada inicial de inspeções ambientais')
+        page.get_by_role('button',name='Salvar registro',exact=True).click()
+        expect(page.locator('.sig-error')).to_be_visible()
+        expect(page.locator('.sig-form-card')).to_be_visible()
+        page.get_by_label('Capacidade diária para serviços (minutos)',exact=True).fill('480')
+        save(page)
+        expect(team_row).to_contain_text('Disponível')
+        expect(team_row).to_contain_text('Inspeção ambiental, Inspeção com drone')
+        team_row.get_by_role('button',name='Perfil operacional',exact=True).click()
+        expect(page.get_by_label('Inspeção ambiental',exact=True)).to_be_checked()
+        expect(page.get_by_label('Capacidade diária para serviços (minutos)',exact=True)).to_have_value('480')
+        profile_shots=ROOT/'docs/screenshots';profile_shots.mkdir(exist_ok=True)
+        page.screenshot(path=str(profile_shots/'sig-uhe-equipe.png'),full_page=True)
+        page.set_viewport_size({'width':390,'height':844})
+        bounds=page.locator('.sig-workspace').bounding_box()
+        assert bounds and bounds['x']>=0 and bounds['x']+bounds['width']<=391,'Team profile clipped on mobile'
+        assert page.locator('.sig-profile-fields').evaluate('(el) => el.scrollWidth <= el.clientWidth + 1'),'Team profile fields overflow'
+        page.screenshot(path=str(profile_shots/'sig-uhe-equipe-mobile.png'),full_page=True)
+        page.set_viewport_size({'width':1440,'height':1080})
+        page.get_by_role('button',name='Cancelar',exact=True).click()
+        print('PASS: native team profile, skills, capacity validation and persisted weekly shift',flush=True)
         tab(page,'UHEs e reservatórios')
         page.get_by_role('button',name='Cadastrar UHE',exact=True).click()
         page.get_by_label('Código da UHE',exact=True).fill('CN1-'+RUN)
@@ -149,10 +195,15 @@ with sync_playwright() as p:
         expect(reader_page.get_by_role('button',name='Nova solicitação',exact=True)).to_have_count(0)
         expect(reader_page.locator('#sig-csv')).to_have_count(0)
         assert api('GET','overview',actor='reader')['can_write'] is False
+        tab(reader_page,'Equipes')
+        reader_page.locator('.sig-table tbody tr').filter(has_text=team_name).get_by_role('button',name='Perfil operacional',exact=True).click()
+        expect(reader_page.get_by_label('Latitude da base operacional',exact=True)).to_be_disabled()
+        expect(reader_page.get_by_role('button',name='Salvar registro',exact=True)).to_have_count(0)
+        expect(reader_page.get_by_role('button',name='Adicionar intervalo',exact=True)).to_have_count(0)
         reader.close()
         print('PASS: native read-only login cannot see write/import controls',flush=True)
         assert not errors,'Browser runtime errors: '+repr(errors[:4])
-        print('E2E complete: 8 scenario groups passed; real backend, no skipped groups.',flush=True)
+        print('E2E complete: 9 scenario groups passed; real backend, no skipped groups.',flush=True)
     except Exception:
         page.screenshot(path=str(ROOT/'.runtime/browser-failure.png'),full_page=True)
         (ROOT/'.runtime/browser-failure.json').write_text(json.dumps({'url':page.url,'body':page.locator('body').inner_text()[:12000],'errors':errors[:15]},indent=2))

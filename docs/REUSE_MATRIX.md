@@ -4,7 +4,7 @@
 |---|---|---|
 | Organização, usuário, autenticação | Core `Models/Company.php`, `Models/User.php`, middleware Sanctum | Reutilizados; sem cadastro paralelo de identidade |
 | Permissões | Core `HasPolicies`, `AuthorizationGuard`, Spatie | Reutilizados com autorização explícita da extensão; granularidade por UHE pendente |
-| Equipes | `Models/Fleet.php`, `FleetDriver.php`, `FleetVehicle.php` | Reutilizar; fixture cria três fleets nativas; calendário e habilidades de equipe pendentes |
+| Equipes | `Models/Fleet.php`, `FleetDriver.php`, `FleetVehicle.php` | Fleet nativa reutilizada; perfil SIG-UHE 1:1 adiciona habilidades, disponibilidade e jornada semanal; exceções por data e planejamento pendentes |
 | Inspetor e veículo | `Models/Driver.php`, `Vehicle.php` | Reutilizar; adequação do perfil inspetor pendente |
 | OS roteirizável | `Models/Order.php`, `OrderConfig.php`, `Payload.php`, `Place.php` | Reutilizados pelo adaptador; estado próprio da solicitação preservado |
 | OS de manutenção | `Models/WorkOrder.php` | Existe; não confundir automaticamente com Order roteirizável. Objeto de manutenção não adotado como duplicata de inspeção |
