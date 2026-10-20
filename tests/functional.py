@@ -98,4 +98,33 @@ class Workflow(unittest.TestCase):
         self.assertEqual(call('GET','requests?q='+protocol+'&status=cancelled')[1]['total'],0)
         self.assertEqual(call('GET','requests?status=invalid')[0],422)
 
+    def test_13_team_operational_profile(self):
+        status,team=call('POST','teams',{'name':'Perfil operacional '+self.run_id});self.assertEqual(status,201,team)
+        url='teams/'+team['uuid']+'/profile'
+        self.assertIsNone(call('GET',url)[1]['profile'])
+        data=dict(version=0,reason='Definição da jornada de inspeção',availability='available',timezone='America/Sao_Paulo',
+                  base_latitude=-23,base_longitude=-50,skills=['environmental','drone'],daily_capacity_minutes=420,
+                  weekly_windows=[dict(day=1,start='08:00',end='12:00'),dict(day=1,start='13:00',end='17:00')])
+        self.assertEqual(call('PATCH',url,data,actor='reader')[0],403)
+        self.assertEqual(call('GET',url,actor='beta')[0],404)
+        self.assertEqual(call('PATCH',url,data,actor='beta')[0],404)
+        for changes in [dict(timezone='Invalid/Zone'),dict(skills=['unknown']),dict(skills=['drone','drone']),
+                        dict(base_latitude=91),dict(daily_capacity_minutes=481),dict(weekly_windows=[]),
+                        dict(weekly_windows=[dict(day=1,start='17:00',end='08:00')]),
+                        dict(weekly_windows=[dict(day=1,start='08:00',end='16:00'),dict(day=1,start='15:00',end='18:00')])]:
+            self.assertEqual(call('PATCH',url,{**data,**changes})[0],422,changes)
+        status,profile=call('PATCH',url,data);self.assertEqual(status,200,profile)
+        self.assertEqual(profile['version'],1);self.assertEqual(profile['skills'],data['skills'])
+        self.assertEqual(call('GET',url,actor='reader')[1]['profile']['weekly_windows'],data['weekly_windows'])
+        self.assertEqual(call('PATCH',url,data)[0],409)  # stale editor cannot overwrite
+        self.assertEqual(call('GET',url)[1]['profile']['version'],1)
+        status,updated=call('PATCH',url,{**data,'version':1,'availability':'unavailable','reason':'Equipe em manutenção'})
+        self.assertEqual(status,200,updated);self.assertEqual(updated['availability'],'unavailable')
+        listed=next(x for x in call('GET','teams')[1]['data'] if x['uuid']==team['uuid'])
+        self.assertEqual(listed['operational_profile']['version'],2)
+        events=[x for x in call('GET','audit')[1]['data'] if x['action']=='team.profile_updated' and x['subject_id']==team['uuid']]
+        self.assertEqual(len(events),2)
+        details=[json.loads(x['details']) for x in events]
+        self.assertTrue(any(x['before'] and x['before']['availability']=='available' and x['after']['availability']=='unavailable' for x in details))
+
 if __name__=='__main__': unittest.main(verbosity=2)

@@ -13,6 +13,8 @@ final class ServiceProvider extends BaseProvider
             Route::get('overview', [Controller::class, 'overview']);
             Route::get('teams', [Controller::class, 'teams']);
             Route::post('teams', [Controller::class, 'createTeam']);
+            Route::get('teams/{id}/profile', [TeamProfile::class, 'show']);
+            Route::patch('teams/{id}/profile', [TeamProfile::class, 'update']);
             Route::patch('requests/{id}', [Controller::class, 'updateRequest']);
             Route::get('plants', [Controller::class, 'plants']);
             Route::post('plants', [Controller::class, 'createPlant']);

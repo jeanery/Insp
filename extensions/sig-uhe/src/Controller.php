@@ -31,7 +31,10 @@ final class Controller extends \Illuminate\Routing\Controller
     }
     public function teams()
     {
-        return Fleet::where('company_uuid',session('company'))->select(['uuid','public_id','name'])->orderBy('name')->paginate(50);
+        $teams=Fleet::where('company_uuid',session('company'))->select(['uuid','public_id','name'])->orderBy('name')->paginate(50);
+        $profiles=DB::table('uhe_team_profiles')->where('company_uuid',session('company'))->whereIn('fleet_uuid',$teams->pluck('uuid'))->get()->keyBy('fleet_uuid');
+        $teams->getCollection()->each(function ($team) use ($profiles) { $team->setAttribute('operational_profile',TeamProfile::decode($profiles->get($team->uuid))); });
+        return $teams;
     }
     public function createTeam(Request $r)
     {

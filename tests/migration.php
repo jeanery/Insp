@@ -11,17 +11,20 @@ try {
     DB::connection('mysql')->statement("CREATE DATABASE `$name` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
     $created=true;
     // Copy actual native table definitions, without data. All destructive DDL is isolated.
-    foreach (['companies','orders'] as $table) DB::connection('mysql')->statement("CREATE TABLE `$name`.`$table` LIKE `$source`.`$table`");
+    foreach (['companies','orders','fleets'] as $table) DB::connection('mysql')->statement("CREATE TABLE `$name`.`$table` LIKE `$source`.`$table`");
     $connection=config('database.connections.mysql'); $connection['database']=$name;
     config(['database.connections.migration_test'=>$connection]);
     DB::setDefaultConnection('migration_test'); Schema::clearResolvedInstance('db.schema');
     $migration=require __DIR__.'/../extensions/sig-uhe/migrations/2026_10_19_000001_create_sig_uhe_tables.php';
     $migration->up();
-    foreach (['uhe_plants','uhe_reservoirs','uhe_requests','uhe_request_orders','uhe_audit_events'] as $table) {
+    $profiles=require __DIR__.'/../extensions/sig-uhe/migrations/2026_10_20_000002_create_team_profiles.php';
+    $profiles->up();
+    foreach (['uhe_plants','uhe_reservoirs','uhe_requests','uhe_request_orders','uhe_audit_events','uhe_team_profiles'] as $table) {
         if (!Schema::hasTable($table)) throw new RuntimeException('Missing table after up: '.$table);
     }
+    $profiles->down();
     $migration->down();
-    foreach (['uhe_plants','uhe_reservoirs','uhe_requests','uhe_request_orders','uhe_audit_events'] as $table) {
+    foreach (['uhe_plants','uhe_reservoirs','uhe_requests','uhe_request_orders','uhe_audit_events','uhe_team_profiles'] as $table) {
         if (Schema::hasTable($table)) throw new RuntimeException('Table remains after down: '.$table);
     }
     if (!Schema::hasTable('companies') || !Schema::hasTable('orders')) throw new RuntimeException('Native tables removed.');
