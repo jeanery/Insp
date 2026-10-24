@@ -4,3 +4,11 @@
 infrastructure/platform-ca.crt
 __pycache__/
 *.pyc
+node_modules/
+cloudflare-app/dist/
+cloudflare-app/.wrangler/
+.dev.vars
+.dev.vars.*
+
+.env.*
+!.env.example

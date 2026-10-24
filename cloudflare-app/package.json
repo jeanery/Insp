@@ -1,0 +1,33 @@
+{
+  "name": "sig-uhe-cloudflare",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "build": "tsc --noEmit && vite build",
+    "dev": "npm run build && wrangler dev",
+    "db:local": "wrangler d1 migrations apply sig-uhe --local",
+    "test": "node tests/run.mjs",
+    "deploy": "node scripts/deploy.mjs",
+    "test:browser": "node tests/browser-runner.mjs",
+    "test:siga": "node tests/real-siga.mjs"
+  },
+  "dependencies": {
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261014.1",
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7",
+    "bcryptjs": "^3.0.3",
+    "prettier": "^3.9.10",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.3",
+    "wrangler": "^4.151.0"
+  }
+}
