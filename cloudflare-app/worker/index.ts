@@ -3,6 +3,7 @@ export interface Env {
   DB: D1Database;
   SIGA: Fetcher;
   ASSETS: Fetcher;
+  PORTAL_ADMIN_EMAILS?: string;
 }
 type User = { id: number; name: string; email: string; role: string };
 const writers = new Set([
@@ -11,6 +12,7 @@ const writers = new Set([
   "coordenador",
   "gerente",
   "diretor",
+  "admin",
 ]);
 const readers = new Set([
   ...writers,
@@ -216,13 +218,23 @@ async function siga(
     fail(503, "SIGA-CCU indisponível. Tente novamente.");
   }
 }
+function isPortalAdmin(env: Env, user: User) {
+  const allowlist = (env.PORTAL_ADMIN_EMAILS || "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+  return allowlist.includes(user.email.trim().toLowerCase());
+}
 async function identity(env: Env, t: string) {
   if (!t) fail(401, "Entre com sua conta SIGA-CCU.");
   const res = await siga(env, "/api/me", t);
   if (res.status === 401) fail(401, "Sessão expirada. Entre novamente.");
   if (!res.ok) fail(503, "Não foi possível validar a sessão no SIGA-CCU.");
   const { user } = await res.json<{ user: User }>();
-  if (!user || !Number.isSafeInteger(user.id) || !readers.has(user.role))
+  if (!user || !Number.isSafeInteger(user.id))
+    fail(403, "Seu perfil não possui acesso operacional ao SIG-UHE.");
+  if (isPortalAdmin(env, user)) return { ...user, role: "admin" };
+  if (!readers.has(user.role))
     fail(403, "Seu perfil não possui acesso operacional ao SIG-UHE.");
   return user;
 }
