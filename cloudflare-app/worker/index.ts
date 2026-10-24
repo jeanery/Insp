@@ -234,13 +234,25 @@ async function identity(env: Env, t: string) {
   const res = await siga(env, "/api/me", t);
   if (res.status === 401) fail(401, "Sessão expirada. Entre novamente.");
   if (!res.ok) fail(503, "Não foi possível validar a sessão no SIGA-CCU.");
-  const { user } = await res.json<{ user: User }>();
+  const { user, authorized_roles } = await res.json<{
+    user: User;
+    authorized_roles?: unknown;
+  }>();
   if (!user || !Number.isSafeInteger(user.id))
     fail(403, "Seu perfil não possui acesso operacional ao SIG-UHE.");
   if (isPortalAdmin(env, user)) return { ...user, role: "admin" };
-  if (!readers.has(user.role))
+  const assignedRoles = [
+    user.role,
+    ...(Array.isArray(authorized_roles)
+      ? authorized_roles.filter((role): role is string => typeof role === "string")
+      : []),
+  ];
+  const role =
+    assignedRoles.find((value) => value !== "admin" && writers.has(value)) ??
+    assignedRoles.find((value) => value !== "admin" && readers.has(value));
+  if (!role)
     fail(403, "Seu perfil não possui acesso operacional ao SIG-UHE.");
-  return user;
+  return { ...user, role };
 }
 function audit(
   env: Env,
