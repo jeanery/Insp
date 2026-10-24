@@ -37,11 +37,11 @@ Consulta: os anteriores e `analista_fundiario`, `analista_respeitabilidade`, `an
 
 ## Publicar pela tela de criação de Worker da Cloudflare
 
-O banco dedicado `sig-uhe` informado pelo proprietário já está associado ao binding `DB` em `wrangler.toml`. O identificador é público de configuração, não uma credencial. A propriedade e a conectividade desse banco serão verificadas quando o build autenticado rodar na conta.
+O Worker é chamado `insp`, como o projeto selecionado na tela da Cloudflare; o nome de apresentação do sistema continua SIG-UHE. O banco dedicado `sig-uhe` informado pelo proprietário já está associado ao binding `DB` em `wrangler.toml`. O identificador é público de configuração, não uma credencial. A propriedade e a conectividade desse banco serão verificadas quando o build autenticado rodar na conta.
 
 Com o repositório `jeanery/Insp`, branch `main`, e o diretório raiz do build mantido na raiz do repositório, use:
 
-- **Project name:** `sig-uhe`.
+- **Project name:** `insp`.
 - **Build command:** `cd cloudflare-app && npm ci && npm run build`.
 - **Deploy command:** `cd cloudflare-app && npm run deploy`.
 - **Preview builds:** desativadas por enquanto; não foi configurado um D1 isolado para previews.
@@ -57,7 +57,7 @@ O fluxo GitHub Actions permite compilar, testar e publicar pela nuvem. Não é n
 1. No GitHub do projeto, abra **Settings → Secrets and variables → Actions → New repository secret**. Cadastre `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID` da **mesma conta Cloudflare** do SIGA-CCU. Nunca envie esses valores no chat ou em commits.
 2. O token Cloudflare deve estar limitado à conta correta, com **Account → Workers Scripts → Edit**, **Account → D1 → Edit** e **Account → Account Settings → Read**. O Account ID é encontrado no painel da conta; não confunda com Database ID ou Zone ID.
 3. Vá a **Actions → Publicar SIG-UHE na Cloudflare → Run workflow** e deixe **database_id vazio**.
-4. O fluxo executa build e testes, confirma que o serviço `siga-ccu` existe nessa conta e cria ou localiza o D1 exclusivo `sig-uhe`. Não cria outro banco quando o D1 já existe. Verifica o esquema de destino, configura o binding `DB`, aplica migrations e publica `sig-uhe`. O Wrangler mostra o endereço na etapa de publicação; use esse endereço, sem presumir um hostname antes da publicação.
+4. O fluxo executa build e testes, confirma que o serviço `siga-ccu` existe nessa conta e cria ou localiza o D1 exclusivo `sig-uhe`. Não cria outro banco quando o D1 já existe. Verifica o esquema de destino, configura o binding `DB`, aplica migrations e publica o Worker `insp`. O Wrangler mostra o endereço na etapa de publicação; use esse endereço, sem presumir um hostname antes da publicação.
 5. Entre com uma conta interna SIGA-CCU com um dos perfis permitidos. Não há senha pública padrão nem modo demonstrativo aberto em produção.
 
 A criação do D1 é automática no fluxo; você não precisa criar o banco manualmente nem instalar ferramentas no Windows. Se preferir indicar um ID já existente, ele deve corresponder exatamente ao D1 `sig-uhe` da conta selecionada. A primeira publicação exige apenas os dois Secrets de conta. O workflow é manual: push de código não publica nem altera produção automaticamente. Se o serviço do SIGA tiver outro nome ou environment, ajuste o binding `SIGA` no `wrangler.toml`. O domínio público recebido anteriormente não substitui a confirmação desse nome na conta.
