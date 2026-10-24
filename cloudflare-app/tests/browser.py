@@ -1,7 +1,7 @@
 from pathlib import Path
 import os
 from playwright.sync_api import sync_playwright, expect
-BASE='http://127.0.0.1:8787'
+BASE=os.getenv('SIG_UHE_TEST_ORIGIN','http://127.0.0.1:8787')
 OUT=Path('../docs/screenshots/cloudflare');OUT.mkdir(parents=True,exist_ok=True)
 with sync_playwright() as p:
     browser=p.chromium.launch(executable_path=os.getenv('CHROMIUM_PATH','/usr/bin/chromium'),args=['--no-sandbox'])

@@ -1,7 +1,9 @@
+import { freePort } from "./ports.mjs";
 import { spawn, spawnSync } from "node:child_process";
 import { mkdirSync, openSync, readFileSync, writeFileSync } from "node:fs";
 import assert from "node:assert/strict";
 import { setTimeout as delay } from "node:timers/promises";
+const port = await freePort();
 const runtime = ".wrangler/test-state-" + crypto.randomUUID();
 mkdirSync(".wrangler", { recursive: true });
 writeFileSync(".wrangler/last-test-state", runtime);
@@ -36,7 +38,7 @@ const proc = spawn(
     "--config",
     process.env.SIGA_TEST_CONFIG || "tests/siga-fixture/wrangler.toml",
     "--port",
-    "8787",
+    String(port),
     "--persist-to",
     runtime,
     "--show-interactive-dev-session=false",
@@ -47,7 +49,7 @@ const proc = spawn(
     env: { ...process.env, WRANGLER_SEND_METRICS: "false" },
   },
 );
-const base = "http://127.0.0.1:8787";
+const base = `http://127.0.0.1:${port}`;
 const auth = { Authorization: "Bearer manager" };
 let passed = 0;
 async function req(path, method = "GET", data, headers = auth) {

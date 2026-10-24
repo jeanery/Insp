@@ -1,7 +1,10 @@
+import { freePort } from "./ports.mjs";
 import { spawn, spawnSync } from "node:child_process";
 import { mkdirSync, openSync } from "node:fs";
 import { setTimeout as delay } from "node:timers/promises";
 import assert from "node:assert/strict";
+const port = await freePort();
+const base = `http://127.0.0.1:${port}`;
 const state = ".wrangler/browser-" + crypto.randomUUID();
 mkdirSync(".wrangler", { recursive: true });
 const log = openSync(".wrangler/browser.log", "w");
@@ -30,7 +33,7 @@ const p = spawn(
     "--config",
     "tests/siga-fixture/wrangler.toml",
     "--port",
-    "8787",
+    String(port),
     "--persist-to",
     state,
     "--show-interactive-dev-session=false",
@@ -45,7 +48,7 @@ try {
   let ready = false;
   for (let i = 0; i < 90; i++) {
     try {
-      if ((await fetch("http://127.0.0.1:8787/api/health")).ok) {
+      if ((await fetch(base + "/api/health")).ok) {
         ready = true;
         break;
       }
@@ -55,6 +58,7 @@ try {
   assert(ready, "Browser worker did not start");
   const test = spawnSync(process.env.PYTHON || "python", ["tests/browser.py"], {
     stdio: "inherit",
+    env: { ...process.env, SIG_UHE_TEST_ORIGIN: base },
   });
   if (test.error) throw test.error;
   assert.notEqual(

@@ -1,3 +1,4 @@
+import { freePort } from "./ports.mjs";
 // Optional compatibility test against the original source supplied by the user; no production calls.
 import {
   readFileSync,
@@ -12,6 +13,8 @@ import { setTimeout as delay } from "node:timers/promises";
 import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import assert from "node:assert/strict";
+const port = await freePort();
+const base = `http://127.0.0.1:${port}`;
 const source = process.argv[2];
 if (!source) throw Error("Pass the extracted SIGA-CCU source folder.");
 const root = resolve(".wrangler/real-siga-" + crypto.randomUUID());
@@ -115,7 +118,7 @@ const proc = spawn(
     "--config",
     config,
     "--port",
-    "8788",
+    String(port),
     "--persist-to",
     state,
     "--show-interactive-dev-session=false",
@@ -130,7 +133,7 @@ try {
   let ready = false;
   for (let i = 0; i < 90; i++) {
     try {
-      if ((await fetch("http://127.0.0.1:8788/api/health")).ok) {
+      if ((await fetch(base + "/api/health")).ok) {
         ready = true;
         break;
       }
@@ -139,7 +142,7 @@ try {
   }
   assert(ready, "Original SIGA Worker did not start; inspect runtime.log.");
   const login = async (email) => {
-    const res = await fetch("http://127.0.0.1:8788/api/auth/login", {
+    const res = await fetch(base + "/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -154,21 +157,21 @@ try {
   assert.equal(manager.status, 200, JSON.stringify(manager.data));
   assert.equal(manager.data.user.role, "supervisor_inspecao");
   assert(!("token" in manager.data));
-  const me = await fetch("http://127.0.0.1:8788/api/me", {
+  const me = await fetch(base + "/api/me", {
     headers: { Cookie: manager.cookie },
   });
   assert.equal(me.status, 200);
   assert.equal((await me.json()).user.id, 1);
   const reader = await login("inspetor@example.test");
   assert.equal(reader.status, 200);
-  const denied = await fetch("http://127.0.0.1:8788/api/teams", {
+  const denied = await fetch(base + "/api/teams", {
     method: "POST",
     headers: { Cookie: reader.cookie, "Content-Type": "application/json" },
     body: '{"name":"Forbidden"}',
   });
   assert.equal(denied.status, 403);
   assert.equal((await login("externo@example.test")).status, 403);
-  const allowed = await fetch("http://127.0.0.1:8788/api/teams", {
+  const allowed = await fetch(base + "/api/teams", {
     method: "POST",
     headers: { Cookie: manager.cookie, "Content-Type": "application/json" },
     body: '{"name":"Equipe original SIGA"}',
