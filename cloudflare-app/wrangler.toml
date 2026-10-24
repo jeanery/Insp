@@ -11,7 +11,7 @@ run_worker_first = ["/api/*"]
 [[d1_databases]]
 binding = "DB"
 database_name = "sig-uhe"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "f51b527d-caa8-4225-a0d5-8db06af3ea02"
 migrations_dir = "migrations"
 
 # Identidade verificada pelo Worker existente; não copiar AUTH_SECRET ou banco SIGA.

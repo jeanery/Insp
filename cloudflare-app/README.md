@@ -35,6 +35,21 @@ Escrita: `supervisor_inspecao`, `supervisor_cessao`, `coordenador`, `gerente`, `
 Consulta: os anteriores e `analista_fundiario`, `analista_respeitabilidade`, `analista_area`, `inspetor_vistoriador`.
 `solicitante`, perfis desconhecidos e sessões inválidas são bloqueados. A tabela é explícita e deve ser homologada com o gestor antes da operação. D1 é exclusivo para uma organização/deployment; não há segregação multiempresa dentro desse banco. Para outras organizações, use deployments e D1 separados até implementar a autorização correspondente. Permissões por UHE permanecem pendentes.
 
+## Publicar pela tela de criação de Worker da Cloudflare
+
+O banco dedicado `sig-uhe` informado pelo proprietário já está associado ao binding `DB` em `wrangler.toml`. O identificador é público de configuração, não uma credencial. A propriedade e a conectividade desse banco serão verificadas quando o build autenticado rodar na conta.
+
+Com o repositório `jeanery/Insp`, branch `main`, e o diretório raiz do build mantido na raiz do repositório, use:
+
+- **Project name:** `sig-uhe`.
+- **Build command:** `cd cloudflare-app && npm ci && npm run build`.
+- **Deploy command:** `cd cloudflare-app && npm run deploy`.
+- **Preview builds:** desativadas por enquanto; não foi configurado um D1 isolado para previews.
+
+Se o diretório raiz for explicitamente alterado para `cloudflare-app` nas opções avançadas da Cloudflare, retire `cd cloudflare-app &&` dos dois comandos. Não use as duas configurações simultaneamente.
+
+Esse caminho usa a autenticação do build da própria Cloudflare. O comando verifica o esquema do D1 antes de migrar e publicar. O token do build precisa permitir edição do Worker e do D1 nessa conta; a associação ao serviço `siga-ccu` também será validada na publicação. Não altere o banco ou o Worker SIGA. Se o build falhar, consulte o erro antes de mudar permissões ou recursos.
+
 ## Publicar sem instalar nada no Windows
 
 O fluxo GitHub Actions permite compilar, testar e publicar pela nuvem. Não é necessário executar o sistema no computador.

@@ -48,3 +48,9 @@ O workflow agora aceita `database_id` vazio e executa `npm run configure:cloudfl
 [Execução 40106235909](https://github.com/jeanery/Insp/actions/runs/40106235909), disparada no commit `d5875be`: instalação com `npm ci`, compilação e testes aprovados no runner GitHub. A configuração retornou a mensagem de Secrets ausentes. Os metadados do log confirmaram `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID` vazios; nenhum valor de credencial foi lido ou exposto. A etapa de migrations/deploy foi omitida pelo próprio workflow após a falha. Nenhuma chamada autenticada ou recurso Cloudflare foi criado por essa execução.
 
 O próximo passo é cadastrar os dois valores em [Settings → Secrets and variables → Actions](https://github.com/jeanery/Insp/settings/secrets/actions). Depois, repetir o workflow com `database_id` vazio; não é necessário criar o D1 manualmente.
+
+## Binding D1 fornecido pelo proprietário
+
+O `wrangler.toml` passou a referenciar o D1 exclusivo informado pelo proprietário: `f51b527d-caa8-4225-a0d5-8db06af3ea02`. É um identificador de recurso, não uma credencial. Sua propriedade e conectividade remotas ainda não foram verificadas neste ambiente sem sessão Cloudflare. A verificação ocorrerá no build autenticado da Cloudflare.
+
+Com esse binding, dez testes do configurador e 12 grupos de integração passaram novamente usando somente D1 local. Os quatro fluxos de navegador e a compatibilidade com o Worker SIGA original também passaram. Os runners agora escolhem uma porta local livre, impedindo que a checagem de prontidão reutilize uma instância interativa existente. Nenhum teste executou migrations no banco remoto.
