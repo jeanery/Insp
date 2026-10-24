@@ -6,7 +6,7 @@ A versão Cloudflare foi executada no runtime local do Wrangler/workerd, com D1 
 |---|---|
 | `npm ci` | Instalação repetida com package-lock preservado |
 | `npm run build` | TypeScript estrito e Vite aprovados; cerca de 250 kB de arquivos, aproximadamente 77 kB comprimidos |
-| `npm test` | 12 grupos de integração passaram, sem grupos omitidos, contra dois Workers e D1 local |
+| `npm test` | 12 grupos de integração passaram, sem grupos omitidos, contra dois Workers e D1 local; dez testes adicionais verificam o configurador Cloudflare com API simulada |
 | `npm run test:browser` | Quatro grupos no Chromium real passaram, sem erros JavaScript: login/cadastros, perfil de equipe, processo SIGA/OS/layout móvel e logout/consulta |
 | `npm run test:siga -- <fonte original>` | Worker e migrations originais do ZIP do usuário, sem alterações, executados com D1/R2 locais e usuários sintéticos; bcrypt, sessão assinada, `/api/me`, negação de perfis e escrita autorizada conferidos |
 | Segurança do destino de deploy | Placeholder do banco bloqueia a publicação antes de qualquer operação remota; script também verifica tabelas características do SIGA antes de migrar |
@@ -38,3 +38,7 @@ A compatibilidade foi exercitada com o código enviado no ZIP, não com contas o
 Não houve criação de recursos, publicação ou alteração no SIGA-CCU online. O GitHub Actions está preparado, mas sua execução remota e o endereço público só podem ser verificados após configurar a conta Cloudflare e um D1 próprio. Não há homologação de produção, escala, restauração de backup, múltiplas organizações no mesmo banco, restrição por UHE, importação de dados MySQL ou equivalência de todo o Fleet-Ops. A emissão de 100 OS em um único endpoint de lote da API antiga ainda não foi portada; a nova API emite por solicitação.
 
 O pacote enviado pelo usuário foi utilizado como referência de arquitetura e contrato. Nenhum `.env`, token, usuário real, banco ou recurso de produção do SIGA foi copiado para o repositório.
+
+## Configuração automática da conta
+
+O workflow agora aceita `database_id` vazio e executa `npm run configure:cloudflare`: verifica a presença do serviço SIGA, lista os D1 da conta, cria `sig-uhe` somente se não existir e verifica metadados do esquema antes de gravar o binding. Não altera o serviço ou o banco SIGA. Os dez testes adicionais desse configurador são locais e simulados; não comprovam acesso a uma conta real. A sessão Wrangler segue sem autenticação. A tentativa de listar Secrets via GitHub API recebeu HTTP 403 por escopo da integração, portanto não foi possível confirmar nem modificar os Secrets do repositório por aqui.

@@ -3,8 +3,8 @@ on:
   workflow_dispatch:
     inputs:
       database_id:
-        description: ID do D1 exclusivo sig-uhe (não use o banco do SIGA-CCU)
-        required: true
+        description: Opcional — deixe vazio para criar/localizar automaticamente o D1 sig-uhe
+        required: false
         type: string
 permissions:
   contents: read
@@ -25,19 +25,12 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm test
-      - name: Configurar o banco exclusivo do SIG-UHE
+      - name: Configurar Cloudflare e o banco exclusivo do SIG-UHE
         env:
           SIG_UHE_D1_ID: ${{ inputs.database_id }}
-        run: |
-          python - <<'PY'
-          import os, re
-          from pathlib import Path
-          value = os.environ['SIG_UHE_D1_ID']
-          if not re.fullmatch(r'[a-fA-F0-9]{8}(?:-[a-fA-F0-9]{4}){3}-[a-fA-F0-9]{12}', value):
-              raise SystemExit('ID do D1 inválido')
-          p = Path('wrangler.toml')
-          p.write_text(p.read_text().replace('00000000-0000-0000-0000-000000000000', value))
-          PY
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npm run configure:cloudflare
       - name: Validar destino, migrar D1 e publicar o Worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

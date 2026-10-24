@@ -10,10 +10,11 @@
     "build": "tsc --noEmit && vite build",
     "dev": "npm run build && wrangler dev",
     "db:local": "wrangler d1 migrations apply sig-uhe --local",
-    "test": "node tests/run.mjs",
+    "test": "node --test tests/configure.test.mjs && node tests/run.mjs",
     "deploy": "node scripts/deploy.mjs",
     "test:browser": "node tests/browser-runner.mjs",
-    "test:siga": "node tests/real-siga.mjs"
+    "test:siga": "node tests/real-siga.mjs",
+    "configure:cloudflare": "node scripts/configure.mjs"
   },
   "dependencies": {
     "react": "^19.1.1",

@@ -39,13 +39,13 @@ Consulta: os anteriores e `analista_fundiario`, `analista_respeitabilidade`, `an
 
 O fluxo GitHub Actions permite compilar, testar e publicar pela nuvem. Não é necessário executar o sistema no computador.
 
-1. Na **mesma conta Cloudflare** do SIGA-CCU, crie um banco D1 **novo**, chamado `sig-uhe`. Copie o Database ID. Não selecione `siga-ccu`.
-2. No GitHub do projeto, vá a **Settings → Secrets and variables → Actions** e cadastre `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID`. O token precisa poder editar Workers e D1 na conta correta. Nunca envie esses valores no chat ou em commits.
-3. Vá a **Actions → Publicar SIG-UHE na Cloudflare → Run workflow**. Informe o ID do D1 novo.
-4. O fluxo executa build e testes, valida o banco de destino, aplica migrations e publica o Worker `sig-uhe`, com vínculo ao `siga-ccu`. O Wrangler mostra o endereço no log da etapa de publicação; use esse endereço, sem presumir um hostname antes da publicação.
+1. No GitHub do projeto, abra **Settings → Secrets and variables → Actions → New repository secret**. Cadastre `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID` da **mesma conta Cloudflare** do SIGA-CCU. Nunca envie esses valores no chat ou em commits.
+2. O token Cloudflare deve estar limitado à conta correta, com **Account → Workers Scripts → Edit**, **Account → D1 → Edit** e **Account → Account Settings → Read**. O Account ID é encontrado no painel da conta; não confunda com Database ID ou Zone ID.
+3. Vá a **Actions → Publicar SIG-UHE na Cloudflare → Run workflow** e deixe **database_id vazio**.
+4. O fluxo executa build e testes, confirma que o serviço `siga-ccu` existe nessa conta e cria ou localiza o D1 exclusivo `sig-uhe`. Não cria outro banco quando o D1 já existe. Verifica o esquema de destino, configura o binding `DB`, aplica migrations e publica `sig-uhe`. O Wrangler mostra o endereço na etapa de publicação; use esse endereço, sem presumir um hostname antes da publicação.
 5. Entre com uma conta interna SIGA-CCU com um dos perfis permitidos. Não há senha pública padrão nem modo demonstrativo aberto em produção.
 
-A primeira publicação exige essas configurações de conta. O workflow é manual: push de código não publica nem altera produção automaticamente. Se o serviço do SIGA tiver outro nome ou environment, ajuste o binding `SIGA` no `wrangler.toml`. O domínio público recebido anteriormente não substitui a confirmação desse nome na conta.
+A criação do D1 é automática no fluxo; você não precisa criar o banco manualmente nem instalar ferramentas no Windows. Se preferir indicar um ID já existente, ele deve corresponder exatamente ao D1 `sig-uhe` da conta selecionada. A primeira publicação exige apenas os dois Secrets de conta. O workflow é manual: push de código não publica nem altera produção automaticamente. Se o serviço do SIGA tiver outro nome ou environment, ajuste o binding `SIGA` no `wrangler.toml`. O domínio público recebido anteriormente não substitui a confirmação desse nome na conta.
 
 O comando de deploy recusa o ID placeholder e verifica se o banco contém tabelas características do SIGA; nesse caso interrompe sem aplicar migrations. Essa verificação reduz o risco de escolher o banco errado, mas não substitui a escolha explícita de um banco dedicado. Migrations futuras devem preservar dados e ter plano de recuperação próprio.
 
@@ -83,6 +83,10 @@ Esse último teste copia somente Worker, constantes e migrations para `.wrangler
 
 ## Publicação pela CLI (opcional)
 
-Após autenticar o Wrangler, crie o D1 próprio e preencha apenas seu `database_id` em `wrangler.toml`. Execute `npm run deploy`. O script verifica o destino antes de aplicar migrations e publicar. O código fornecido não contém recursos/IDs reais da conta do SIGA.
+Com as variáveis `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID` configuradas de forma segura na máquina, execute `npm run configure:cloudflare` para criar/localizar o D1 e configurar o binding. Depois execute `npm run deploy`. O script verifica o destino antes de aplicar migrations e publicar. O código fornecido não contém recursos/IDs reais da conta do SIGA.
 
 Veja os resultados em [VALIDATION.md](VALIDATION.md).
+
+## Validação da configuração automática
+
+`npm test` também executa dez testes do configurador contra respostas simuladas da API Cloudflare: criação, reutilização, conta/ID inválido, serviço SIGA ausente, banco errado ou ambíguo, esquema suspeito/incompleto e negação de permissões. Esses testes não criam recursos reais. A validação da conta e a publicação online exigem os Secrets no GitHub.
