@@ -214,7 +214,11 @@ async function siga(
         redirect: "manual",
       }),
     );
-  } catch {
+  } catch (error) {
+    console.error("Falha na chamada interna ao SIGA-CCU", {
+      path,
+      reason: error instanceof Error ? error.message : String(error),
+    });
     fail(503, "SIGA-CCU indisponível. Tente novamente.");
   }
 }
@@ -441,10 +445,13 @@ async function api(r: Request, env: Env, url: URL) {
   }
   if (path === "/api/health") {
     await env.DB.prepare("SELECT 1").first();
+    const upstream = await siga(env, "/api/health", "");
+    if (!upstream.ok) fail(503, "SIGA-CCU indisponível.");
     return json({
       ok: true,
       runtime: "cloudflare-workers",
       identity: "siga-ccu",
+      siga: "ok",
       routing: false,
     });
   }
