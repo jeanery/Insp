@@ -35,10 +35,16 @@ Capturas atuais, com dados fictícios: [painel](../docs/screenshots/cloudflare/p
 
 A compatibilidade foi exercitada com o código enviado no ZIP, não com contas ou dados da instância pública do SIGA. Os testes normais usam um Worker-fixture de contrato; o teste adicional executou o Worker original. As identidades fictícias e o fixture não fazem parte do deploy de produção. O código original copiado para esse teste e suas credenciais locais ficam somente em `.wrangler/`, ignorado pelo Git.
 
-Não houve criação de recursos, publicação ou alteração no SIGA-CCU online. O GitHub Actions está preparado, mas sua execução remota e o endereço público só podem ser verificados após configurar a conta Cloudflare e um D1 próprio. Não há homologação de produção, escala, restauração de backup, múltiplas organizações no mesmo banco, restrição por UHE, importação de dados MySQL ou equivalência de todo o Fleet-Ops. A emissão de 100 OS em um único endpoint de lote da API antiga ainda não foi portada; a nova API emite por solicitação.
+Não houve criação de recursos, publicação ou alteração no SIGA-CCU online. O GitHub Actions foi executado: instalação, build e testes remotos passaram; a etapa de configuração parou por ausência dos Secrets Cloudflare. O endereço público e a criação do D1 ainda dependem dessas credenciais. Não há homologação de produção, escala, restauração de backup, múltiplas organizações no mesmo banco, restrição por UHE, importação de dados MySQL ou equivalência de todo o Fleet-Ops. A emissão de 100 OS em um único endpoint de lote da API antiga ainda não foi portada; a nova API emite por solicitação.
 
 O pacote enviado pelo usuário foi utilizado como referência de arquitetura e contrato. Nenhum `.env`, token, usuário real, banco ou recurso de produção do SIGA foi copiado para o repositório.
 
 ## Configuração automática da conta
 
 O workflow agora aceita `database_id` vazio e executa `npm run configure:cloudflare`: verifica a presença do serviço SIGA, lista os D1 da conta, cria `sig-uhe` somente se não existir e verifica metadados do esquema antes de gravar o binding. Não altera o serviço ou o banco SIGA. Os dez testes adicionais desse configurador são locais e simulados; não comprovam acesso a uma conta real. A sessão Wrangler segue sem autenticação. A tentativa de listar Secrets via GitHub API recebeu HTTP 403 por escopo da integração, portanto não foi possível confirmar nem modificar os Secrets do repositório por aqui.
+
+### Execução real do GitHub Actions
+
+[Execução 40106235909](https://github.com/jeanery/Insp/actions/runs/40106235909), disparada no commit `d5875be`: instalação com `npm ci`, compilação e testes aprovados no runner GitHub. A configuração retornou a mensagem de Secrets ausentes. Os metadados do log confirmaram `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID` vazios; nenhum valor de credencial foi lido ou exposto. A etapa de migrations/deploy foi omitida pelo próprio workflow após a falha. Nenhuma chamada autenticada ou recurso Cloudflare foi criado por essa execução.
+
+O próximo passo é cadastrar os dois valores em [Settings → Secrets and variables → Actions](https://github.com/jeanery/Insp/settings/secrets/actions). Depois, repetir o workflow com `database_id` vazio; não é necessário criar o D1 manualmente.
