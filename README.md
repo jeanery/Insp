@@ -1,5 +1,13 @@
 # SIG-UHE
 
+## Versão Cloudflare — sem Docker no computador
+
+A nova aplicação em **React + TypeScript + Cloudflare Workers + D1** está em [`cloudflare-app/`](cloudflare-app/README.md). Ela usa a identidade do SIGA-CCU por ligação entre Workers e pode ser compilada e publicada pelo GitHub Actions. Veja o [guia de publicação](cloudflare-app/README.md#publicar-sem-instalar-nada-no-windows) e as [validações](cloudflare-app/VALIDATION.md).
+
+A implementação Fleetbase abaixo permanece como versão anterior. Seus dados não são migrados automaticamente para D1.
+
+## Versão anterior — Fleetbase/Fleet-Ops
+
 Extensão modular para Fleetbase/Fleet-Ops. A entrega atual reúne a **API e a interface web de desenvolvimento** para UHEs, reservatórios, solicitações, equipes e emissão de ordens nativas. O MVP completo descrito em [requisitos](docs/REQUIREMENTS.md) ainda está em desenvolvimento.
 
 ## Preparar e executar
